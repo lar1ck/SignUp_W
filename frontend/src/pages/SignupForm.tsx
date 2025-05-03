@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-interface UserProps{
+interface UserProps {
   id: number,
   first_name: string,
   last_name: string,
@@ -16,7 +16,8 @@ function SignupForm() {
     password: '',
     confirmPassword: ''
   });
-  const [users,setUsers] = useState<UserProps[]>([]);
+  const [users, setUsers] = useState<UserProps[]>([]);
+  const [fetchUsersError, setFetchUsersError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -50,7 +51,9 @@ function SignupForm() {
         password: '',
         confirmPassword: ''
       });
+      console.log("registered");
       alert(result.message);
+      // navigate("/dashboard");
     } catch (error) {
       console.error('Signup error:', error);
     }
@@ -58,16 +61,32 @@ function SignupForm() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await axios.get("http://localhost:5000/api/users");
-      setUsers(res.data);
+      try {
+
+        const res = await axios.get("http://localhost:5000/api/users");
+        setUsers(res.data);
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 401) {
+            setFetchUsersError("Unauthorized");
+          } else if (err.response?.status === 403) {
+            setFetchUsersError("Token expired or invalid");
+          } else {
+            setFetchUsersError("An unexpected error occurred");
+          }
+        } else {
+          setFetchUsersError("Network or unknown error");
+        }
+      }
     }
     fetchUsers();
-  })
+  }, [])
 
   return (
     <>
       <form onSubmit={handleSubmit}>
         <input
+          className='p-1 border m-1'
           type="text"
           name="first_name"
           placeholder="First_name"
@@ -77,6 +96,7 @@ function SignupForm() {
         /><br />
 
         <input
+          className='p-1 border m-1'
           type="text"
           name="last_name"
           placeholder="Last_name"
@@ -86,6 +106,7 @@ function SignupForm() {
         /><br />
 
         <input
+          className='p-1 border m-1'
           type="email"
           name="email"
           placeholder="Email"
@@ -95,6 +116,7 @@ function SignupForm() {
         /><br />
 
         <input
+          className='p-1 border m-1'
           type="password"
           name="password"
           placeholder="Password"
@@ -104,25 +126,32 @@ function SignupForm() {
         /><br />
 
         <input
+          className='p-1 border m-1'
           type="password"
           name="confirmPassword"
           placeholder="Confirm Password"
           value={formData.confirmPassword}
           onChange={handleChange}
           required
-        /><br />
+        />
+        <br />
 
-        <button type="submit">Sign Up</button>
+        <button type="submit" className='px-3 py-1 bg-black text-white font-bold rounded-lg'>Sign Up</button>
       </form> <br />
 
       <div>
-        {users.map((user) =>(
-          <div key={user.id}>
-              First Name: {user.first_name} <br />
-              Last Name: {user.last_name} <br />
-              Email: {user.email} <br />  
+        {users.length > 0 ?
+          <div>
+            {users.map((user) => (
+              <div key={user.id} className='bg-cyan-100 mt-2 '>
+                First Name: {user.first_name} <br />
+                Last Name: {user.last_name} <br />
+                Email: {user.email} <br />
+              </div>
+            ))}
           </div>
-        ))}
+          : <p> {fetchUsersError} </p>}
+
       </div>
     </>
   );
