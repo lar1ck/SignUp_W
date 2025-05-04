@@ -1,15 +1,15 @@
 import { Outlet } from 'react-router'
 import SideBar from '../../components/sideBar/SideBar'
-import Menu from '../../components/menu/Menu'
 
 const DashboardLayout = () => {
     return (
-        <div className='h-screen'>
-            <Menu />
-            <div className='flex gap-1 '>
-                <SideBar />
-                <div className=' w-screen p-3'>
-                <Outlet />
+        <div className='h-screen flex flex-col'>
+            <div className='flex flex-1 overflow-hidden'>
+                <div className='h-screen overflow-y-auto] w-[20%]'>
+                    <SideBar />
+                </div>
+                <div className='flex-1 p-3 overflow-y-auto'>
+                    <Outlet />
                 </div>
             </div>
         </div>

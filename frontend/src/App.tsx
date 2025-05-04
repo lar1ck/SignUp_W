@@ -4,7 +4,7 @@ import Dashboard from './pages/Dashboard/Dashboard.tsx'
 import ProtectedRoute from './middleware/ProtectedRoute.tsx';
 import DashboardLayout from './pages/Dashboard/DashboardLayout.tsx';
 import Products from './pages/Products/Products.tsx';
-import ManageProducts from './pages/Products/ManageProducts.tsx';
+import InsightsPage from './pages/Products/InsightsPage.tsx';
 
 function App() {
   return (
@@ -13,9 +13,9 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path='/' element={<DashboardLayout />} >
           <Route path='/' element={<Dashboard />}>
-            <Route index element={<Products />} />
+            <Route index element={<InsightsPage />} />
             <Route path='/products-database' element={<Products />} />
-            <Route path='/view-products' element={<ManageProducts />} />
+            <Route path='/dashboard-analytics' element={<InsightsPage />} />
           </Route>
         </ Route>
       </Route>
