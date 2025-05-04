@@ -6,6 +6,7 @@ const signupRoute = require('./routes/signup');
 const userRoute = require('./routes/users');
 const loginRoute = require('./routes/login');
 const TokenRoute = require('./routes/token');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use('/api/signup', signupRoute);
 app.use('/api/users', userRoute);
 app.use('/api/login', loginRoute);
 app.use('/api/verifyToken', TokenRoute);
+app.use('/api/products', productRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server running on http://localhost:${process.env.PORT}`);
