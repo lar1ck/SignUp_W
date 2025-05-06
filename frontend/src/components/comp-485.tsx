@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react"
+import AddProductDialog from "./addProductDialog"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -24,9 +25,9 @@ import {
   ChevronUpIcon,
   CircleAlertIcon,
   CircleXIcon,
-  Columns3Icon,
+  // Columns3Icon,
   EllipsisIcon,
-  FilterIcon,
+  // FilterIcon,
   ListFilterIcon,
   PlusIcon,
   TrashIcon,
@@ -53,12 +54,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { Input } from "./ui/input"
@@ -71,7 +67,7 @@ import {
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
+  // PopoverTrigger,
 } from "./ui/popover"
 import {
   Select,
@@ -88,6 +84,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table"
+import EditProductDialog from "./editProductDialog"
 
 interface Product {
   id: number;
@@ -101,7 +98,6 @@ interface Product {
   date_modified: string;
 }
 
-// Custom filter function for multi-column searching
 const multiColumnFilterFn: FilterFn<Product> = (row, _, filterValue) => {
   const searchableRowContent =
     `${row.original.name} ${row.original.category}`.toLowerCase()
@@ -166,8 +162,8 @@ const columns: ColumnDef<Product>[] = [
     accessorKey: "name",
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
-        <img 
-          src={row.original.image_url} 
+        <img
+          src={row.original.image_url}
           alt={row.original.name}
           className="h-10 w-10 rounded-md object-cover"
         />
@@ -207,8 +203,8 @@ const columns: ColumnDef<Product>[] = [
     accessorKey: "expiration_date",
     cell: ({ row }) => (
       <div>
-        {row.original.expiration_date 
-          ? formatDate(row.original.expiration_date) 
+        {row.original.expiration_date
+          ? formatDate(row.original.expiration_date)
           : "N/A"}
       </div>
     ),
@@ -249,6 +245,7 @@ export default function ProductTable() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [data, setData] = useState<Product[]>([])
   const token = localStorage.getItem('token')
+  const [isAddOpen, setIsAddOpen] = useState(false)
 
   useEffect(() => {
     async function fetchProducts() {
@@ -270,10 +267,9 @@ export default function ProductTable() {
   const handleDeleteRows = async () => {
     const selectedRows = table.getSelectedRowModel().rows
     const selectedIds = selectedRows.map(row => row.original.id)
-    
+
     try {
-      // Delete each product individually since bulk delete isn't implemented
-      await Promise.all(selectedIds.map(id => 
+      await Promise.all(selectedIds.map(id =>
         axios.delete(`http://localhost:5000/api/products/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -281,7 +277,7 @@ export default function ProductTable() {
           }
         })
       ))
-      
+
       const updatedData = data.filter(
         (item) => !selectedIds.includes(item.id)
       )
@@ -289,6 +285,45 @@ export default function ProductTable() {
       table.resetRowSelection()
     } catch (error) {
       console.error("Error deleting products:", error)
+    }
+  }
+
+  // const handleEditProduct = async (updatedProduct: Product) => {
+  //   try {
+  //     const response = await axios.put(
+  //       `http://localhost:5000/api/products/${updatedProduct.id}`,
+  //       updatedProduct,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           'Content-Type': 'application/json'
+  //         }
+  //       }
+  //     )
+  //     setData(data.map(product =>
+  //       product.id === updatedProduct.id ? response.data : product
+  //     ))
+  //   } catch (error) {
+  //     console.error("Error updating product:", error)
+  //   }
+  // }
+
+  const handleAddProduct = async (newProduct: Omit<Product, 'id' | 'date_added' | 'date_modified'>) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/products",
+        newProduct,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      setData([response.data, ...data])
+    } catch (error) {
+      console.error("Error creating product:", error)
     }
   }
 
@@ -313,14 +348,12 @@ export default function ProductTable() {
     },
   })
 
-  // Get unique category values
   const categoryColumn = table.getColumn("category")
   const uniqueCategoryValues = useMemo(() => {
     if (!categoryColumn) return []
     return Array.from(categoryColumn.getFacetedUniqueValues().keys()).sort()
   }, [categoryColumn])
 
-  // Get counts for each category
   const categoryCounts = useMemo(() => {
     if (!categoryColumn) return new Map()
     return categoryColumn.getFacetedUniqueValues()
@@ -349,10 +382,13 @@ export default function ProductTable() {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      <AddProductDialog
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        onSave={handleAddProduct}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          {/* Filter by name or category */}
           <div className="relative">
             <Input
               id={`${id}-input`}
@@ -390,9 +426,8 @@ export default function ProductTable() {
             )}
           </div>
 
-          {/* Filter by category */}
           <Popover>
-            <PopoverTrigger asChild>
+            {/* <PopoverTrigger asChild>
               <Button variant="outline">
                 <FilterIcon
                   className="-ms-1 opacity-60"
@@ -406,7 +441,7 @@ export default function ProductTable() {
                   </span>
                 )}
               </Button>
-            </PopoverTrigger>
+            </PopoverTrigger> */}
             <PopoverContent className="w-auto min-w-36 p-3" align="start">
               <div className="space-y-3">
                 <div className="text-muted-foreground text-xs font-medium">
@@ -438,9 +473,8 @@ export default function ProductTable() {
             </PopoverContent>
           </Popover>
 
-          {/* Toggle columns visibility */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            {/* <DropdownMenuTrigger asChild>
               <Button variant="outline">
                 <Columns3Icon
                   className="-ms-1 opacity-60"
@@ -449,33 +483,30 @@ export default function ProductTable() {
                 />
                 View
               </Button>
-            </DropdownMenuTrigger>
+            </DropdownMenuTrigger> */}
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
               {table
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                      onSelect={(event) => event.preventDefault()}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                    onSelect={(event) => event.preventDefault()}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Delete button */}
           {table.getSelectedRowModel().rows.length > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -493,10 +524,7 @@ export default function ProductTable() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <div className="flex flex-col gap-2 max-sm:items-center sm:flex-row sm:gap-4">
-                  <div
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full border"
-                    aria-hidden="true"
-                  >
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full border">
                     <CircleAlertIcon className="opacity-80" size={16} />
                   </div>
                   <AlertDialogHeader>
@@ -523,8 +551,11 @@ export default function ProductTable() {
             </AlertDialog>
           )}
 
-          {/* Add product button */}
-          <Button className="ml-auto" variant="outline">
+          <Button
+            className="ml-auto"
+            variant="outline"
+            onClick={() => setIsAddOpen(true)}
+          >
             <PlusIcon
               className="-ms-1 opacity-60"
               size={16}
@@ -535,67 +566,46 @@ export default function ProductTable() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-background overflow-hidden rounded-md border">
         <Table className="table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      style={{ width: `${header.getSize()}px` }}
-                      className="h-11"
-                    >
-                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                        <div
-                          className={cn(
-                            header.column.getCanSort() &&
-                              "flex h-full cursor-pointer items-center justify-between gap-2 select-none"
-                          )}
-                          onClick={header.column.getToggleSortingHandler()}
-                          onKeyDown={(e) => {
-                            if (
-                              header.column.getCanSort() &&
-                              (e.key === "Enter" || e.key === " ")
-                            ) {
-                              e.preventDefault()
-                              header.column.getToggleSortingHandler()?.(e)
-                            }
-                          }}
-                          tabIndex={header.column.getCanSort() ? 0 : undefined}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          {{
-                            asc: (
-                              <ChevronUpIcon
-                                className="shrink-0 opacity-60"
-                                size={16}
-                                aria-hidden="true"
-                              />
-                            ),
-                            desc: (
-                              <ChevronDownIcon
-                                className="shrink-0 opacity-60"
-                                size={16}
-                                aria-hidden="true"
-                              />
-                            ),
-                          }[header.column.getIsSorted() as string] ?? null}
-                        </div>
-                      ) : (
-                        flexRender(
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    style={{ width: `${header.getSize()}px` }}
+                    className="h-11"
+                  >
+                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                      <div
+                        className="flex h-full cursor-pointer items-center justify-between gap-2 select-none"
+                        onClick={header.column.getToggleSortingHandler()}
+                        onKeyDown={(e) => {
+                          if ((e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault()
+                            header.column.getToggleSortingHandler()?.(e)
+                          }
+                        }}
+                        tabIndex={0}
+                      >
+                        {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
-                        )
-                      )}
-                    </TableHead>
-                  )
-                })}
+                        )}
+                        {{
+                          asc: <ChevronUpIcon className="shrink-0 opacity-60" size={16} />,
+                          desc: <ChevronDownIcon className="shrink-0 opacity-60" size={16} />,
+                        }[header.column.getIsSorted() as string] ?? null}
+                      </div>
+                    ) : (
+                      flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )
+                    )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -618,10 +628,7 @@ export default function ProductTable() {
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No products found.
                 </TableCell>
               </TableRow>
@@ -630,23 +637,19 @@ export default function ProductTable() {
         </Table>
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between gap-8">
-        {/* Results per page */}
         <div className="flex items-center gap-3">
           <Label htmlFor={id} className="max-sm:sr-only">
             Rows per page
           </Label>
           <Select
             value={table.getState().pagination.pageSize.toString()}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value))
-            }}
+            onValueChange={(value) => table.setPageSize(Number(value))}
           >
             <SelectTrigger id={id} className="w-fit whitespace-nowrap">
               <SelectValue placeholder="Select number of results" />
             </SelectTrigger>
-            <SelectContent className="[&_*[role=option]]:ps-2 [&_*[role=option]]:pe-8 [&_*[role=option]>span]:start-auto [&_*[role=option]>span]:end-2">
+            <SelectContent className="[&_*[role=option]]:ps-2 [&_*[role=option]]:pe-8">
               {[5, 10, 25, 50].map((pageSize) => (
                 <SelectItem key={pageSize} value={pageSize.toString()}>
                   {pageSize}
@@ -656,39 +659,30 @@ export default function ProductTable() {
           </Select>
         </div>
 
-        {/* Page number information */}
         <div className="text-muted-foreground flex grow justify-end text-sm whitespace-nowrap">
-          <p
-            className="text-muted-foreground text-sm whitespace-nowrap"
-            aria-live="polite"
-          >
+          <p className="text-sm whitespace-nowrap" aria-live="polite">
             <span className="text-foreground">
               {table.getState().pagination.pageIndex *
                 table.getState().pagination.pageSize +
                 1}
               -
               {Math.min(
-                Math.max(
-                  table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    table.getState().pagination.pageSize,
-                  0
-                ),
+                table.getState().pagination.pageIndex *
+                table.getState().pagination.pageSize +
+                table.getState().pagination.pageSize,
                 table.getRowCount()
               )}
             </span>{" "}
             of{" "}
             <span className="text-foreground">
-              {table.getRowCount().toString()}
+              {table.getRowCount()}
             </span>
           </p>
         </div>
 
-        {/* Pagination buttons */}
         <div>
           <Pagination>
             <PaginationContent>
-              {/* First page button */}
               <PaginationItem>
                 <Button
                   size="icon"
@@ -696,12 +690,10 @@ export default function ProductTable() {
                   className="disabled:pointer-events-none disabled:opacity-50"
                   onClick={() => table.firstPage()}
                   disabled={!table.getCanPreviousPage()}
-                  aria-label="Go to first page"
                 >
-                  <ChevronFirstIcon size={16} aria-hidden="true" />
+                  <ChevronFirstIcon size={16} />
                 </Button>
               </PaginationItem>
-              {/* Previous page button */}
               <PaginationItem>
                 <Button
                   size="icon"
@@ -709,12 +701,10 @@ export default function ProductTable() {
                   className="disabled:pointer-events-none disabled:opacity-50"
                   onClick={() => table.previousPage()}
                   disabled={!table.getCanPreviousPage()}
-                  aria-label="Go to previous page"
                 >
-                  <ChevronLeftIcon size={16} aria-hidden="true" />
+                  <ChevronLeftIcon size={16} />
                 </Button>
               </PaginationItem>
-              {/* Next page button */}
               <PaginationItem>
                 <Button
                   size="icon"
@@ -722,12 +712,10 @@ export default function ProductTable() {
                   className="disabled:pointer-events-none disabled:opacity-50"
                   onClick={() => table.nextPage()}
                   disabled={!table.getCanNextPage()}
-                  aria-label="Go to next page"
                 >
-                  <ChevronRightIcon size={16} aria-hidden="true" />
+                  <ChevronRightIcon size={16} />
                 </Button>
               </PaginationItem>
-              {/* Last page button */}
               <PaginationItem>
                 <Button
                   size="icon"
@@ -735,9 +723,8 @@ export default function ProductTable() {
                   className="disabled:pointer-events-none disabled:opacity-50"
                   onClick={() => table.lastPage()}
                   disabled={!table.getCanNextPage()}
-                  aria-label="Go to last page"
                 >
-                  <ChevronLastIcon size={16} aria-hidden="true" />
+                  <ChevronLastIcon size={16} />
                 </Button>
               </PaginationItem>
             </PaginationContent>
@@ -750,6 +737,8 @@ export default function ProductTable() {
 
 function RowActions({ row }: { row: Row<Product> }) {
   const token = localStorage.getItem('token')
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [originalProduct, setOriginalProduct] = useState(row.original)
 
   const handleDelete = async () => {
     try {
@@ -759,64 +748,80 @@ function RowActions({ row }: { row: Row<Product> }) {
           'Content-Type': 'application/json'
         }
       })
-      // You might want to refresh the table data here
     } catch (error) {
       console.error("Error deleting product:", error)
     }
   }
 
+  const handleEdit = async (updatedProduct: Product) => {
+    try {
+      const payload = {
+        ...updatedProduct,
+        // Preserve original image URL if not changed
+        image_url: updatedProduct.image_url.startsWith('blob:')
+          ? originalProduct.image_url
+          : updatedProduct.image_url
+      }
+
+      const response = await axios.put(
+        `http://localhost:5000/api/products/${updatedProduct.id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      // Update local state with the response data
+      setOriginalProduct(response.data)
+    } catch (error) {
+      console.error("Error updating product:", error)
+    }
+  }
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <div className="flex justify-end">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="shadow-none"
-            aria-label="Edit item"
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <div className="flex justify-end">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="shadow-none"
+              aria-label="Open actions menu"
+            >
+              <EllipsisIcon size={16} />
+            </Button>
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuGroup>
+            <DropdownMenuItem onSelect={() => setIsEditOpen(true)}>
+              <span>Edit</span>
+              <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={handleDelete}
           >
-            <EllipsisIcon size={16} aria-hidden="true" />
-          </Button>
-        </div>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <span>Edit</span>
-            <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
+            <span>Delete</span>
+            <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <span>Duplicate</span>
-            <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <span>Update Stock</span>
-            <DropdownMenuShortcut>⌘U</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>More</DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem>Move to category</DropdownMenuItem>
-                <DropdownMenuItem>View history</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Advanced options</DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          className="text-destructive focus:text-destructive"
-          onClick={handleDelete}
-        >
-          <span>Delete</span>
-          <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <EditProductDialog
+        product={originalProduct}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        onSave={(updatedProduct) => {
+          handleEdit(updatedProduct)
+          setIsEditOpen(false)
+        }}
+      />
+    </>
   )
 }

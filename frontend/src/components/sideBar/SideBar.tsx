@@ -56,17 +56,17 @@ const SideBar = () => {
                             >
                                 Products Database
                             </Link>
-                            <Link
+                            {/* <Link
                                 to='/view-products'
                                 className='block px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors'
                             >
                                 Edit Products
-                            </Link>
+                            </Link> */}
                         </div>
                     )}
                 </div>
 
-                <div className='rounded-md overflow-hidden'>
+                {/* <div className='rounded-md overflow-hidden'>
                     <button
                         onClick={() => toggleSection('Bala')}
                         className='w-full flex items-center justify-between p-2 text-sm font-medium text-foreground hover:bg-accent transition-colors'
@@ -95,7 +95,7 @@ const SideBar = () => {
                             </Link>
                         </div>
                     )}
-                </div>
+                </div> */}
             </div>
 
             <div className='p-4 border-t border-muted sticky bottom-0 bg-background'>
